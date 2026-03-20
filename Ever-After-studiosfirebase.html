@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ever After Studios - Firebase Version</title>
+
+<!-- PayPal SDK -->
+<script src="https://www.paypal.com/sdk/js?client-id=AYIWhVL7V1YiwjIPaf-gvbaDNyOJnrTL0JXYNwiUaXFF0o6fohX_ppkiYGf5ZCU-1VkID9exoZxMtqdJ&currency=USD"></script>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+
+<style>
+body { margin:0; font-family:Georgia; background:#f5f1ed; }
+.header { background: linear-gradient(90deg,#c48a8a,#4a5a78); color:white; text-align:center; padding:30px; }
+.container { display:grid; grid-template-columns:1fr 2fr 1fr; gap:20px; padding:20px; }
+.card { background:white; padding:15px; border-radius:15px; }
+input, select { width:100%; padding:8px; margin:5px 0; }
+button { width:100%; padding:10px; border:none; border-radius:6px; margin-top:5px; cursor:pointer; }
+.primary { background:#c48a8a; color:white; }
+.gold { background:#d4b36a; color:white; }
+.preview { height:250px; display:flex; align-items:center; justify-content:center; border:1px solid #eee; }
+.fund { background:#777; color:white; padding:20px; border-radius:20px; text-align:center; }
+.progress { height:6px; background:#ccc; margin:10px 0; }
+.progress-bar { height:100%; width:0%; background:gold; }
+.section { margin:10px 20px; background:white; padding:15px; border-radius:10px; }
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<h1>Ever After Studios</h1>
+<p>Ultimate Wedding Manifest & Gift Bank</p>
+</div>
+
+<!-- LOGIN / REGISTER -->
+<div class="card" style="max-width:400px;margin:20px auto;">
+<h3>Login / Sign Up</h3>
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button onclick="signUp()">Sign Up</button>
+<button onclick="login()">Login</button>
+<button onclick="logout()">Logout</button>
+<p id="userStatus"></p>
+</div>
+
+<div class="container">
+
+<!-- LEFT: Generator -->
+<div class="card">
+<h3>Generator</h3>
+<input id="name1" placeholder="Partner 1">
+<input id="name2" placeholder="Partner 2">
+<input id="location" placeholder="Location">
+<button class="primary" onclick="updatePreview()">Update Design</button>
+<hr>
+<h4>Points</h4>
+<p id="points">0</p>
+<button onclick="addPoints(10)">Test RSVP (+10)</button>
+<button onclick="addPoints(5)">Test Comment (+5)</button>
+</div>
+
+<!-- CENTER: Visual -->
+<div class="card">
+<h3>Visual</h3>
+<div class="preview" id="preview">Name & Name</div>
+</div>
+
+<!-- RIGHT: Fund & Packages -->
+<div>
+<div class="fund">
+<h3>Honeymoon Fund</h3>
+<h2 id="fund">$0</h2>
+<div class="progress"><div class="progress-bar" id="bar"></div></div>
+<div id="paypal-donate"></div>
+</div>
+
+<div class="card">
+<h4>Packages</h4>
+<div id="paypal-prime"></div>
+<div id="paypal-premium"></div>
+<div id="paypal-ultimate"></div>
+</div>
+</div>
+
+</div>
+
+<!-- EXTRA SECTIONS -->
+<div class="section">
+<h3>Venues</h3>
+<button class="primary">Luxury Resort</button>
+<button class="primary">Wedding Planner</button>
+</div>
+
+<div class="section">
+<h3>Discount</h3>
+<input placeholder="Email">
+<input placeholder="Referral Code">
+<button class="primary">Claim</button>
+</div>
+
+<script>
+/* FIREBASE CONFIG */
+const firebaseConfig = {
+  apiKey: "PASTE_YOUR_KEY_HERE",
+  authDomain: "PASTE_YOUR_KEY_HERE",
+  projectId: "PASTE_YOUR_KEY_HERE",
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* LOGIN FUNCTIONS */
+function signUp(){
+    let email = document.getElementById("email").value;
+    let pass = document.getElementById("password").value;
+    auth.createUserWithEmailAndPassword(email, pass)
+    .then(()=>{ document.getElementById("userStatus").innerText="Account Created"; })
+    .catch(err=>alert(err.message));
+}
+function login(){
+    let email = document.getElementById("email").value;
+    let pass = document.getElementById("password").value;
+    auth.signInWithEmailAndPassword(email, pass)
+    .then(()=>{ document.getElementById("userStatus").innerText="Logged In"; loadUserData(); })
+    .catch(err=>alert(err.message));
+}
+function logout(){
+    auth.signOut();
+    document.getElementById("userStatus").innerText="Logged Out";
+}
+
+/* LOAD / SAVE USER DATA */
+let points = 0, fund = 0;
+function saveUserData(){
+    let user = auth.currentUser;
+    if(!user) return;
+    db.collection("weddings").doc(user.uid).set({points, fund});
+}
+function loadUserData(){
+    let user = auth.currentUser;
+    if(!user) return;
+    db.collection("weddings").doc(user.uid).get()
+    .then(doc=>{
+        if(doc.exists){
+            points = doc.data().points || 0;
+            fund = doc.data().fund || 0;
+            document.getElementById("points").innerText = points;
+            document.getElementById("fund").innerText = "$"+fund;
+            updateProgress();
+        }
+    });
+}
+
+/* GENERATOR PREVIEW */
+function updatePreview(){
+    let n1=document.getElementById("name1").value;
+    let n2=document.getElementById("name2").value;
+    let loc=document.getElementById("location").value;
+    document.getElementById("preview").innerHTML=n1+" & "+n2+"<br><small>"+loc+"</small>";
+}
+
+/* POINT SYSTEM */
+function addPoints(p){
+    points+=p;
+    document.getElementById("points").innerText=points;
+    saveUserData();
+    updateProgress();
+}
+
+/* PROGRESS BAR */
+function updateProgress(){
+    let percent=(points/1000)*100;
+    document.getElementById("bar").style.width=percent+"%";
+}
+
+/* DONATION */
+function addDonation(amount){
+    fund+=amount;
+    points+=amount*10;
+    document.getElementById("fund").innerText="$"+fund;
+    document.getElementById("points").innerText=points;
+    saveUserData();
+    updateProgress();
+}
+
+/* PAYPAL BUTTONS */
+// DONATION
+paypal.Buttons({
+    createOrder:(d,a)=>a.order.create({purchase_units:[{amount:{value:'10.00'}}]}),
+    onApprove:(d,a)=>a.order.capture().then(()=>{ addDonation(10); alert("Donation Successful!"); })
+}).render('#paypal-donate');
+// PRIME
+paypal.Buttons({
+    createOrder:(d,a)=>a.order.create({purchase_units:[{amount:{value:'19.99'}}]}),
+    onApprove:(d,a)=>a.order.capture().then(()=>{ alert("Prime Activated"); })
+}).render('#paypal-prime');
+// PREMIUM
+paypal.Buttons({
+    createOrder:(d,a)=>a.order.create({purchase_units:[{amount:{value:'49.99'}}]}),
+    onApprove:(d,a)=>a.order.capture().then(()=>{
+        points+=250; saveUserData();
+        document.getElementById("points").innerText=points; updateProgress();
+        alert("Premiere Activated +250 Points");
+    })
+}).render('#paypal-premium');
+// ULTIMATE
+paypal.Buttons({
+    createOrder:(d,a)=>a.order.create({purchase_units:[{amount:{value:'99.99'}}]}),
+    onApprove:(d,a)=>a.order.capture().then(()=>{
+        points+=500; saveUserData();
+        document.getElementById("points").innerText=points; updateProgress();
+        alert("Ultimate Activated +500 Points");
+    })
+}).render('#paypal-ultimate');
+</script>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBpljE1TAfn2mzXLwtlw2YjPHQLFFX2YeI",
+    authDomain: "ever-after-studios1.firebaseapp.com",
+    projectId: "ever-after-studios1",
+    storageBucket: "ever-after-studios1.firebasestorage.app",
+    messagingSenderId: "1077229265050",
+    appId: "1:1077229265050:web:3ee0e37d3dfc070c2d3f23"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
+
+</body>
+</html>
