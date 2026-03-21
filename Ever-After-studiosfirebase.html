@@ -34,14 +34,11 @@ button { width:100%; padding:10px; border:none; border-radius:6px; margin-top:5p
   fontsize:48px;
 </style>
 </head>
-
 <body>
-
 <div class="header">
 <h1>Ever After Studios</h1>
 <p>Ultimate Wedding Manifest & Gift Bank</p>
 </div>
-
 <!-- LOGIN / REGISTER -->
 <div class="card" style="max-width:400px;margin:20px auto;">
 <h3>Login / Sign Up</h3>
@@ -52,9 +49,7 @@ button { width:100%; padding:10px; border:none; border-radius:6px; margin-top:5p
 <button onclick="logout()">Logout</button>
 <p id="userStatus"></p>
 </div>
-
 <div class="container">
-
 <!-- LEFT: Generator -->
 <div class="card">
 <h3>Generator</h3>
@@ -68,13 +63,11 @@ button { width:100%; padding:10px; border:none; border-radius:6px; margin-top:5p
 <button onclick="addPoints(10)">Test RSVP (+10)</button>
 <button onclick="addPoints(5)">Test Comment (+5)</button>
 </div>
-
 <!-- CENTER: Visual -->
 <div class="card">
 <h3>Visual</h3>
 <div class="preview" id="preview">Name & Name</div>
 </div>
-
 <!-- RIGHT: Fund & Packages -->
 <div>
 <div class="fund">
@@ -91,23 +84,19 @@ button { width:100%; padding:10px; border:none; border-radius:6px; margin-top:5p
 <div id="paypal-ultimate"></div>
 </div>
 </div>
-
 </div>
-
 <!-- EXTRA SECTIONS -->
 <div class="section">
 <h3>Venues</h3>
 <button class="primary">Luxury Resort</button>
 <button class="primary">Wedding Planner</button>
 </div>
-
 <div class="section">
 <h3>Discount</h3>
 <input placeholder="Email">
 <input placeholder="Referral Code">
 <button class="primary">Claim</button>
 </div>
-
 <script>
 /* FIREBASE CONFIG */
 const firebaseConfig = {
@@ -118,7 +107,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-
 /* LOGIN FUNCTIONS */
 function signUp(){
     let email = document.getElementById("email").value;
